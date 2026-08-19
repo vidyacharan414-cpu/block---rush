@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Block Rush 2</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#090c12;color:#fff;font-family:Arial,sans-serif;display:flex;justify-content:center;min-height:100vh}
+#app{width:min(430px,100%);padding:12px}h1{text-align:center;margin:5px 0 10px;font-size:30px}
+#menu{background:#151b27;border:1px solid #293348;border-radius:18px;padding:20px;text-align:center}
+.logo{font-size:54px;margin:8px}.tag{color:#aeb8cc;margin-bottom:18px}
+button{width:100%;border:0;border-radius:13px;padding:14px;margin:7px 0;background:#4f7cff;color:#fff;font-size:17px;font-weight:700}
+.secondary{background:#252d3d}.small{font-size:13px;color:#99a4b9;margin-top:12px}
+#gameUI{display:none}.hud{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px}.box{background:#151b27;border-radius:10px;padding:8px;text-align:center;font-size:12px}.box b{display:block;font-size:17px;margin-top:3px}
+canvas{width:100%;aspect-ratio:9/16;background:#080b10;border:2px solid #2d3548;border-radius:15px;display:block;touch-action:none}
+#power{position:relative;height:8px;background:#242b39;border-radius:8px;margin:8px 0;overflow:hidden}#bar{height:100%;width:0;background:#63e6be}
+#pause{background:#252d3d;margin-top:8px}
+</style>
+</head>
+<body><div id="app">
+<h1>⚡ BLOCK RUSH</h1>
+<div id="menu">
+<div class="logo">🟦💥</div><h2>Block Rush</h2><div class="tag">Dodge. Collect. Survive.</div>
+<button id="play">PLAY</button><button id="how" class="secondary">HOW TO PLAY</button>
+<div class="small">Coins, levels, shields & power-ups included</div>
+</div>
+<div id="gameUI">
+<div class="hud">
+<div class="box">SCORE<b id="score">0</b></div><div class="box">COINS<b id="coins">0</b></div>
+<div class="box">LEVEL<b id="level">1</b></div><div class="box">❤️<b id="lives">3</b></div>
+</div>
+<div id="power"><div id="bar"></div></div>
+<canvas id="game" width="360" height="640"></canvas>
+<button id="pause">PAUSE</button>
+</div>
+</div>
+<script>
+const c=document.getElementById("game"),ctx=c.getContext("2d");
+const menu=document.getElementById("menu"),ui=document.getElementById("gameUI");
+const scoreEl=document.getElementById("score"),coinEl=document.getElementById("coins"),levelEl=document.getElementById("level"),lifeEl=document.getElementById("lives"),bar=document.getElementById("bar");
+let p,blocks,coins,powers,score,coinCount,level,lives,shield,power,run,last,spawn,coinSpawn,powerSpawn,best=+localStorage.brBest||0,drag=false;
+let audio=null;
+function beep(f=500,d=.06){try{audio??=new AudioContext();let o=audio.createOscillator(),g=audio.createGain();o.frequency.value=f;g.gain.value=.035;o.connect(g);g.connect(audio.destination);o.start();o.stop(audio.currentTime+d)}catch(e){}}
+function start(){menu.style.display="none";ui.style.display="block";p={x:165,y:575,w:30,h:30,s:6};blocks=[];coins=[];powers=[];score=0;coinCount=0;level=1;lives=3;shield=0;power=0;spawn=0;coinSpawn=30;powerSpawn=220;run=true;last=performance.now();beep(700,.1);requestAnimationFrame(loop)}
+function rect(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
+function addBlock(){let w=24+Math.random()*38;blocks.push({x:Math.random()*(360-w),y:-50,w,h:22+Math.random()*38,s:3+Math.random()*1.8+level*.45})}
+function addCoin(){coins.push({x:15+Math.random()*330,y:-20,r:7,s:3+level*.3})}
+function addPower(){powers.push({x:20+Math.random()*320,y:-20,w:18,h:18,s:3.2,type:Math.random()<.55?"shield":"life"})}
+function gameOver(){run=false;if(score>best){best=Math.floor(score);localStorage.brBest=best}beep(150,.2);ctx.fillStyle="rgba(0,0,0,.72)";ctx.fillRect(0,0,360,640);ctx.textAlign="center";ctx.fillStyle="#fff";ctx.font="bold 34px Arial";ctx.fillText("GAME OVER",180,275);ctx.font="20px Arial";ctx.fillText("Score: "+Math.floor(score),180,315);ctx.fillText("Coins: "+coinCount,180,345);ctx.font="16px Arial";ctx.fillText("Tap PLAY to try again",180,380);document.getElementById("pause").textContent="BACK TO MENU"}
+function loop(t){if(!run)return;let dt=Math.min((t-last)/16.67,2);last=t;
+if(keys.ArrowLeft||keys.a)p.x-=p.s*dt;if(keys.ArrowRight||keys.d)p.x+=p.s*dt;p.x=Math.max(0,Math.min(330,p.x));
+spawn-=dt;coinSpawn-=dt;powerSpawn-=dt;if(spawn<=0){addBlock();spawn=Math.max(13,34-level*1.8)}
+if(coinSpawn<=0){addCoin();coinSpawn=28+Math.random()*25}
+if(powerSpawn<=0){addPower();powerSpawn=240+Math.random()*180}
+blocks.forEach(x=>x.y+=x.s*dt);coins.forEach(x=>x.y+=x.s*dt);powers.forEach(x=>x.y+=x.s*dt);
+for(let i=blocks.length-1;i>=0;i--)if(blocks[i].y>660)blocks.splice(i,1);
+for(let i=coins.length-1;i>=0;i--){let q=coins[i],b={x:q.x-q.r,y:q.y-q.r,w:q.r*2,h:q.r*2};if(rect(p,b)){coinCount++;power=Math.min(100,power+8);coins.splice(i,1);beep(850,.04)}else if(q.y>660)coins.splice(i,1)}
+for(let i=powers.length-1;i>=0;i--){let q=powers[i];if(rect(p,q)){if(q.type==="shield")shield=360;else lives=Math.min(5,lives+1);powers.splice(i,1);beep(950,.08)}else if(q.y>660)powers.splice(i,1)}
+for(let i=blocks.length-1;i>=0;i--)if(rect(p,blocks[i])){blocks.splice(i,1);if(shield>0)shield=0;else{lives--;beep(180,.1);if(lives<=0){draw();gameOver();return}}}
+score+=dt*.7;level=1+Math.floor(score/100);power=Math.min(100,power+dt*.04);shield=Math.max(0,shield-dt);
+scoreEl.textContent=Math.floor(score);coinEl.textContent=coinCount;levelEl.textContent=level;lifeEl.textContent=lives;bar.style.width=power+"%";draw();requestAnimationFrame(loop)}
+function draw(){ctx.clearRect(0,0,360,640);ctx.fillStyle="#080b10";ctx.fillRect(0,0,360,640);ctx.strokeStyle="#111722";for(let y=0;y<640;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(360,y);ctx.stroke()}
+ctx.fillStyle="#4f7cff";ctx.fillRect(p.x,p.y,p.w,p.h);ctx.fillStyle="#b9c8ff";ctx.fillRect(p.x+7,p.y+5,16,5);
+if(shield>0){ctx.strokeStyle="#63e6be";ctx.lineWidth=3;ctx.beginPath();ctx.arc(p.x+15,p.y+15,25,0,Math.PI*2);ctx.stroke()}
+blocks.forEach(b=>{ctx.fillStyle="#ff4f6d";ctx.fillRect(b.x,b.y,b.w,b.h);});coins.forEach(q=>{ctx.fillStyle="#ffd43b";ctx.beginPath();ctx.arc(q.x,q.y,q.r,0,Math.PI*2);ctx.fill()});
+powers.forEach(q=>{ctx.fillStyle=q.type==="shield"?"#63e6be":"#ff8bd1";ctx.fillRect(q.x,q.y,q.w,q.h);ctx.fillStyle="#081018";ctx.font="bold 12px Arial";ctx.textAlign="center";ctx.fillText(q.type==="shield"?"S":"+",
+q.x+9,q.y+13)})}
+let keys={};addEventListener("keydown",e=>keys[e.key]=true);addEventListener("keyup",e=>keys[e.key]=false);
+function move(e){let r=c.getBoundingClientRect(),x=(e.clientX-r.left)*360/r.width;p.x=Math.max(0,Math.min(330,x-15))}
+c.addEventListener("pointerdown",e=>{if(run){drag=true;move(e)}});c.addEventListener("pointermove",e=>{if(drag&&run)move(e)});c.addEventListener("pointerup",()=>drag=false);c.addEventListener("pointercancel",()=>drag=false);
+document.getElementById("play").onclick=start;
+document.getElementById("how").onclick=()=>alert("Move left/right. Avoid red blocks. Collect yellow coins. Green S gives a shield. Pink + gives an extra life. Every 100 points increases the level!");
+document.getElementById("pause").onclick=()=>{if(run){run=false;document.getElementById("pause").textContent="RESUME"}else{if(lives<=0){menu.style.display="block";ui.style.display="none";document.getElementById("pause").textContent="PAUSE"}else{run=true;last=performance.now();document.getElementById("pause").textContent="PAUSE";requestAnimationFrame(loop)}}};
+draw();
+</script></body></html>
