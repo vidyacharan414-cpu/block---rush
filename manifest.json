@@ -5,9 +5,9 @@
   "name": "Block Rush",
   "description": "Dodge blocks, collect coins, and survive as long as possible in Block Rush.",
   "orientation": "any",
-  "scope": "/",
+  "scope": "/block---rush/",
   "short_name": "Block Rush",
-  "start_url": "/",
+  "start_url": "/block---rush/",
   "theme_color": "#ffffff"
   "icons": [
   {
