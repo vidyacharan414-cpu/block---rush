@@ -3,6 +3,7 @@
   "dir": "ltr",
   "display": "standalone",
   "name": "Block Rush",
+  "description": "Dodge blocks, collect coins, and survive as long as possible in Block Rush.",
   "orientation": "any",
   "scope": "/",
   "short_name": "Block Rush",
